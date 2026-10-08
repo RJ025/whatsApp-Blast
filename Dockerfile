@@ -3,17 +3,19 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install build essentials if needed for alpine
 RUN apk add --no-cache libc6-compat
 
-# Copy dependency definitions
+# Copy package definitions
 COPY package*.json ./
 
-# Install all dependencies
+# Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy all source files
 COPY . .
+
+# Ensure public folder exists even if git didn't include it
+RUN mkdir -p /app/public
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -25,16 +27,15 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN apk add --no-cache libc6-compat
 
-# Create directory for persistent WhatsApp session
-RUN mkdir -p /app/whatsapp-auth
+# Ensure directories exist
+RUN mkdir -p /app/whatsapp-auth /app/public
 
-# Copy files from builder
+# Copy built application and dependencies
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
@@ -43,4 +44,4 @@ COPY --from=builder /app/next.config.mjs ./
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["sh", "-c", "npx next start -p ${PORT:-3000} -H 0.0.0.0"]
