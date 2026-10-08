@@ -1,0 +1,15 @@
+services:
+  whatsblast:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whatsblast-marketing
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persistent volume for WhatsApp credentials so sessions survive container restarts
+      - ./whatsapp-auth:/app/whatsapp-auth
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
